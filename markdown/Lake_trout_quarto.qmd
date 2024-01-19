@@ -1,0 +1,164 @@
+---
+title: "Lester Model plots"
+format: 
+  html:
+    self-contained: true
+editor: visual
+---
+
+## Lake Trout Lester Model
+
+I want to commend the Region 3 staff for identifying the Lester Model as a candidate to improve lake trout management in Alaska. I've enjoyed reviewing the literature you sent and agree that the Lester model is a significant improvement over the lake area model currently in use. The question posed to me was whether it was appropriate to use the Lester model strait "out of the box" or if we need to update and ground truth it first. I do think it is worth the effort to use as much Alaskan data as possible to either modify or ground truth the estimates coming out of the Lester model.
+
+### Model intuition
+
+One major advantage to using a model like this to manage our lake trout populations is that it can get us thinking about what population bottlenecks might exist and/or what research we might do to improve our assessment. I don't have the local area or biological experience to answer those types of questions but I did create a few plots to help demonstrate what the model thinks is going on for the 10 populations James included in this email. For starters, here is the lake specific information I was given as well as the model derived estimates that go into the MSY calculation.
+
+```{r}
+#| warning: FALSE
+library(tidyverse)
+library(knitr)
+source("..\\functions\\lester_model_R_code.R")
+```
+
+```{r}
+#| tab-cap: "Region 3 Lake trout habitat information and Lester model derived parameters."
+lake <- c("Crosswind", "Fielding", "Glacier Gap", "Louise", "Paxson", "Little Sevenmile", "Summit", "Susitna", "Round Tangle", "Shallow Tangle", "Combined Tangle")
+temp <- c(-3.04, -5.89, -7.13, -3.29, -4.15, -5.89, -5.89, -3.29, -7.13, -7.13, -7.13)
+area <- c(3716.55, 561.96, 178.06, 5913.07, 1569.92, 35.13, 1770.12, 3635.16, 156.15, 129.5, 285.65)
+mean_depth <- c(15.9, 8.7, 7.1, 13, 8.4, 4.4, 15.6, 9, 10, 2, 6.4)
+max_depth <- c(36.6, 23.1, 24.4, 51, 29.7, 14.1, 63.4, 36.6, 27.3, 19.8, 27.3)
+lester <- lester_msy(lake, temp, area, mean_depth, max_depth)
+kable(lester, digits = 2)
+```
+
+The graph below shows the model estimated thermocline depths across a range of input values (as contours) and where each Region 3 lake fits on that relationship. Thermocline depth is used the a future calculation of habitat suitability.
+
+```{r}
+#| fig-height: 5
+#| fig-width: 8
+#| fig-cap: "Estimated thermocline depth for Region 3 lake trout habitats"
+lester_plot <- 
+  lester %>%
+    mutate(#D_mn = DescTools::RoundTo(D_mn, 1.5),
+           #W_inf = DescTools::RoundTo(W_inf, 0.25),
+           pV_eb = DescTools::RoundTo(pV_eb, 0.2),
+           S = DescTools::RoundTo(S, 0.25),
+           lake_size = cut(A, c(0, 1000, 3000, 10000),
+                           c("0-100ha", "101-1000ha", "1001-10000ha")))
+
+expand.grid(Temp = seq(-10, 5, 1), D_mn = seq(1, 17, 2), A = seq(100, 61000, 500)) %>% 
+  mutate(D_th = 3.26*A^0.109*D_mn^0.213*exp(-0.0263*Temp)) %>% 
+  ggplot(aes(x = Temp, y = D_mn, z = D_th)) + 
+  geom_contour_filled() +
+  geom_point(data = lester_plot, mapping = aes(color = lake), size = 3) +
+  labs(title = "Thermocline Depth",
+       x = "Mean Annual Air Temperature",
+       y = "Mean lake depth") +
+  facet_grid(. ~ lake_size, , labeller = label_both)
+```
+
+Here is the model estimated distribution of habitat types for the region 3 Lakes. If I recall correctly the model was using epilimnion volume as a measure of lake productivity and hypolimnion volume as a measure of summer refuge habitat.
+
+```{r}
+#| fig-height: 5
+#| fig-width: 8
+#| fig-cap: "Estimated asymptotic length and weight for region 3 lake trout populations"
+lester %>% 
+  mutate(pV_me = 1 - pV_eb - pV_hy) %>%
+  select(lake, starts_with("pV")) %>%
+  pivot_longer(cols = starts_with("pV")) %>%
+  mutate(zone = factor(name, levels = c("pV_eb", "pV_me", "pV_hy"), labels = c("Epilimnion", "Metalimnion", "Hypolimnion"), ordered = TRUE)) %>%
+  ggplot(aes(x = lake, y = value, fill = zone)) + 
+    geom_col() +
+    labs(title = "Habitat distibution",
+         x = "Lake",
+         y = "Percent of Volume") +
+    theme(axis.text.x = element_text(angle = 25, vjust = 0.5, hjust=1))
+```
+
+The habitat suitability index requires increased cold water refugia when air temperatures are high.
+
+```{r}
+#| fig-height: 5
+#| fig-width: 8
+#| fig-cap: "Estimated lake trout habitat suitability as a function of mean annual air temperature and the percent of the lake volume which is in the hypolimnion zone (a measure of summertime habitat)"
+expand.grid(Temp = seq(-10, 5, 1), pV_hy = seq(0, .4, .1)) %>% 
+  mutate(S = 1/(1+ exp(2.47 + .389*Temp - 16.8 * pV_hy))) %>% 
+  ggplot(aes(x = Temp, y = pV_hy, z = S)) + 
+  geom_contour_filled() +
+  geom_point(data = lester_plot, mapping = aes(color = lake), size = 3) +
+  labs(title = "Lake Trout Habitat Suitability",
+       x = "Mean Annual Air Temperature",
+       y = "Proportion of the lake volume in the hypolimnetic zone")
+```
+
+Four variables go into the biomass density calculation so there is a lot going on in this plot. The relationship which may be most questionable for Alaska is whether epibenthic volume has the same relationship to productivity in Alaska that is has in Ontario.
+
+```{r}
+#| fig-cap: "Estimated lake trout biomass density as a function of mean depth, asymptotic weight, habitat suitability (S), and the percent of the lake volume which is in the epibenthic zone (pV_eb, a measure of productivity)"
+#| fig-height: 8
+#| fig-width: 8
+expand.grid(D_mn = seq(1.5, 19, 2), pV_eb = seq(0.2, 1, .2), S = seq(0.5, 1, 0.25), W_inf = seq(0.75, 4.5, .25)) %>%
+  mutate(B_msy = 8.47*(D_mn*pV_eb*S)/W_inf^1.33) %>% 
+  ggplot(aes(x = D_mn, y = W_inf, z = B_msy)) + 
+  geom_contour_filled(breaks = c(0, 2.5, 5, 10, 20, 200)) +
+  geom_point(data = lester_plot, mapping = aes(color = lake), size = 3) +
+  scale_x_continuous(limits = c(1.5, 19)) +
+  facet_grid(S ~ pV_eb, , labeller = label_both) +
+  labs(title = "Biomass density at MSY",
+       x = "Mean depth",
+       y = "Asymptotic weight")
+```
+
+I would guess we have a lot of local data we could use to inform these relationships.
+
+```{r}
+#| fig-height: 5
+#| fig-width: 8
+#| fig-cap: "Estimated asymptotic length and weight for region 3 lake trout populations"
+lester %>% 
+  select(lake, A, L_inf, W_inf) %>%
+  pivot_longer(cols = ends_with("inf")) %>%
+  ggplot(aes(x = A, y = value, color = lake)) + 
+    geom_point() +
+    facet_wrap(.~name, scales = "free") +
+    labs(title = "Asymtotic length and weight",
+         x = "Lake Area")
+```
+
+Mortality is an important variable in the calculation. If we have any way to ground truth these estimates it would be helpful.
+
+```{r}
+#| fig-cap: "Estimated lake trout natural mortality as a function of mean annual air temperature and asymptotic weight"
+#| fig-height: 5
+#| fig-width: 8
+expand.grid(Temp = seq(-10, 5, 1), W_inf = seq(0.75, 4.5, .25)) %>% 
+  mutate(M = 0.26*(exp(0.021*Temp+0.0004*Temp^2))/W_inf^0.30) %>% 
+  ggplot(aes(x = Temp, y = W_inf, z = M)) + 
+  geom_contour_filled() +
+  geom_point(data = lester_plot, mapping = aes(color = lake), size = 3) +
+  labs(title = "Lake Trout Natural Mortality",
+       x = "Mean Annual Air Temperature",
+       y = "Asymptotic weight")
+```
+
+### How to update
+
+There seem to be several ways to update/improve/localize this model, and I'm not sure which is most appropriate.
+
+-   In instances where we have abundant data it might be appropriate to just estimate our own equation.
+
+-   If we could obtain variance estimates form the authors we may be able to use Bayesian methods to up\[date their parameter estimates suing our data.
+
+-   If we know some vales it might make sense to just plug in our known values as opposed to using the Lester equation to estimate the same thing.
+
+### How to ground truth
+
+The other issue I think we need to consider is how to verify the model is making accurate estimates for our lakes. While we could ground truth each estimate independently SWHS records for these stocks (or any direct estimate of biomass we might have) should be compared to the model outputs.
+
+### How to not abuse the Lester model
+
+I think it's important to note that Lester et all. intended this model be be a regional scale diagnostic because they felt the MSY estimates were to variable to be of much use. I hear staff talking about wanting to use these estimates of MSY to modify regulations on individual lakes. I'd urge cation here and think hard about how to make decisions for groups of like lakes. The Lester paper gives some instruction on how they thought this should be done.
+
+I also think we need to have some careful though on the fraction of MSY we want to harvest and if we want that fraction to change depending on our ability to identify problems while they are still fixable.

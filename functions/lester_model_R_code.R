@@ -29,5 +29,7 @@ lester_msy <- function(lake, temp, area, mean_depth, max_depth){
   M <- 0.26*(exp(0.021*Temp+0.0004*Temp^2))/W_inf^0.30
   msy_ha <- B_msy*M
   msy <- round(msy_ha*area, 2)
-  return(data.frame(lake=lake, temp=temp, area=area, mean_depth=mean_depth, max_depth=max_depth, msy=msy))
+  return(data.frame(lake = lake, Temp = temp, A = area, D_mn = mean_depth, D_max = max_depth, 
+                    DR = DR, D_th = D_th, pV_hy = pV_hy, pV_eb = pV_eb, L_inf = L_inf, W_inf = W_inf, S = S, 
+                    B_msy = B_msy, M = M, msy_ha = msy_ha, msy = msy))
 }
