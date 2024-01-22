@@ -8,11 +8,11 @@ editor: visual
 
 ## Lake Trout Lester Model
 
-I want to commend the Region 3 staff for identifying the Lester Model as a candidate to improve lake trout management in Alaska. I've enjoyed reviewing the literature you sent and agree that the Lester model is a significant improvement over the lake area model currently in use. The question posed to me was whether it was appropriate to use the Lester model strait "out of the box" or if we need to update and ground truth it first. I do think it is worth the effort to use as much Alaskan data as possible to either modify or ground truth the estimates coming out of the Lester model.
+I want to commend the Region 3 staff for identifying the Lester Model as a candidate to improve lake trout management in Alaska. I've enjoyed reviewing the literature you sent and agree that the Lester model is a significant improvement over the lake area model currently in use. The question posed to me was whether it was appropriate to use the Lester model strait "out of the box" or if we need to update and/or ground truth the model before it is used for management. Bottom line up front: I do think it is worth the effort to use as much Alaskan data as possible to either modify or ground truth the estimates coming out of the Lester model before we use the results to take management action.
 
 ### Model intuition
 
-One major advantage to using a model like this to manage our lake trout populations is that it can get us thinking about what population bottlenecks might exist and/or what research we might do to improve our assessment. I don't have the local area or biological experience to answer those types of questions but I did create a few plots to help demonstrate what the model thinks is going on for the 10 populations James included in this email. For starters, here is the lake specific information I was given as well as the model derived estimates that go into the MSY calculation.
+One major advantage to using a model like this to manage our lake trout populations is that it can get us thinking about what population bottlenecks might exist and/or what research we might do to improve our assessment. I don't have the local area or biological experience to answer those types of questions but I did create a few plots to help demonstrate what the model thinks is going on for the 10 populations James included in this email. For starters, here is the lake specific information I was given (first 5 columns) as well as the model derived estimates that go into the MSY calculation (next 11 columns). The column names should match the definitions provided in the Lester paper.
 
 ```{r}
 #| warning: FALSE
@@ -32,18 +32,20 @@ lester <- lester_msy(lake, temp, area, mean_depth, max_depth)
 kable(lester, digits = 2)
 ```
 
-The graph below shows the model estimated thermocline depths across a range of input values (as contours) and where each Region 3 lake fits on that relationship. Thermocline depth is used the a future calculation of habitat suitability.
+I'll use a series of graphs to show 2 things that might be of interest while we start to think about ways to update and/or ground truth the Lester model. First, I'll estimate Lester model parameters over a grid of likely values to show the response surface for many derived parameters as contour plots. My hope is that staff can use these to develop intuition about how the data is used by the mode to estimate parameters of interest. Certain points within each contour plot will be identified so that we can see why the model believes some Region 3 lakes are more or less productive.
+
+Thermocline depth is a parameter the model uses to partition habitat in each lake. As I understand it some of the habitat above the thermocline is used as a proxy for lake productivity while some of the habitat below is uses a a proxy for summer refuge habitat. The graph below shows the model estimated thermocline depths across a range of input values (as contours) and where each Region 3 lake fits on that relationship.
 
 ```{r}
-#| fig-height: 5
+#| fig-height: 6
 #| fig-width: 8
 #| fig-cap: "Estimated thermocline depth for Region 3 lake trout habitats"
 lester_plot <- 
   lester %>%
     mutate(#D_mn = DescTools::RoundTo(D_mn, 1.5),
            #W_inf = DescTools::RoundTo(W_inf, 0.25),
-           pV_eb = DescTools::RoundTo(pV_eb, 0.2),
-           S = DescTools::RoundTo(S, 0.25),
+           pV_eb = round(pV_eb/0.2) * 0.2,
+           S = round(S/0.25) * 0.25,
            lake_size = cut(A, c(0, 100, 1000, 6000),
                            c("0-100ha", "101-1000ha", "1001-6000ha")))
 
@@ -58,12 +60,12 @@ expand.grid(Temp = seq(-10, 5, 1), D_mn = seq(1, 17, 2), A = seq(100, 6100, 500)
   facet_grid(. ~ lake_size, , labeller = label_both)
 ```
 
-Here is the model estimated distribution of habitat types for the region 3 Lakes. If I recall correctly the model was using epilimnion volume as a measure of lake productivity and hypolimnion volume as a measure of summer refuge habitat.
+Here is the model estimated distribution of habitat types for the region 3 Lakes. The model uses epilimnion volume as a measure of lake productivity and hypolimnion volume as a measure of summer refuge habitat. The former is treated as proportional to MSY while the later becomes important only when mean annual air temperature is high.
 
 ```{r}
 #| fig-height: 5
 #| fig-width: 8
-#| fig-cap: "Estimated asymptotic length and weight for region 3 lake trout populations"
+#| fig-cap: "Lester model estimated epilimnion, metalimnion, and hypolimnion volume for region 3 lake trout populations"
 lester %>% 
   mutate(pV_me = 1 - pV_eb - pV_hy) %>%
   select(lake, starts_with("pV")) %>%
@@ -77,10 +79,10 @@ lester %>%
     theme(axis.text.x = element_text(angle = 25, vjust = 0.5, hjust=1))
 ```
 
-The habitat suitability index requires increased cold water refugia when air temperatures are high.
+As discussed, the habitat suitability index requires increased hypolimnion volume when air temperatures are high. Susitna, Little Sevenmile and Shallow Tangle are the lakes with questionable habitat according to the Lester model.
 
 ```{r}
-#| fig-height: 5
+#| fig-height: 6
 #| fig-width: 8
 #| fig-cap: "Estimated lake trout habitat suitability as a function of mean annual air temperature and the percent of the lake volume which is in the hypolimnion zone (a measure of summertime habitat)"
 expand.grid(Temp = seq(-10, 5, 1), pV_hy = seq(0, .4, .1)) %>% 
@@ -111,7 +113,7 @@ expand.grid(D_mn = seq(1.5, 19, 2), pV_eb = seq(0.2, 1, .2), S = seq(0.5, 1, 0.2
        y = "Asymptotic weight")
 ```
 
-I would guess we have a lot of local data we could use to inform these relationships.
+I would guess we have a lot of local data we could use to inform an Alaska specific relationship between lake area, asymptotic length and asymptotic weight.
 
 ```{r}
 #| fig-height: 5
@@ -127,11 +129,11 @@ lester %>%
          x = "Lake Area")
 ```
 
-Mortality is an important variable in the calculation. If we have any way to ground truth these estimates it would be helpful. If we don't this could be a quantity we try to identify in future studies.
+Note that while mortality is a function fo asymptotic weight and temperature it reduced to mostly a function of weights since our lakes are all similar temperatures.
 
 ```{r}
 #| fig-cap: "Estimated lake trout natural mortality as a function of mean annual air temperature and asymptotic weight"
-#| fig-height: 5
+#| fig-height: 6
 #| fig-width: 8
 expand.grid(Temp = seq(-10, 5, 1), W_inf = seq(0.75, 4.5, .25)) %>% 
   mutate(M = 0.26*(exp(0.021*Temp+0.0004*Temp^2))/W_inf^0.30) %>% 
@@ -143,11 +145,25 @@ expand.grid(Temp = seq(-10, 5, 1), W_inf = seq(0.75, 4.5, .25)) %>%
        y = "Asymptotic weight")
 ```
 
+```{r}
+#| fig-cap: "Estimated MSP per hectare as a function of mortality and biomass density"
+#| fig-height: 6
+#| fig-width: 8
+expand.grid(M = seq(.15, .25, .1), B_msy = seq(4, 20, 4)) %>% 
+  mutate(msy_ha = B_msy*M) %>% 
+  ggplot(aes(x = M, y = B_msy, z = msy_ha)) + 
+  geom_contour_filled() +
+  geom_point(data = lester_plot, mapping = aes(color = lake), size = 3) +
+  labs(title = "MSY per hectare",
+       x = "Mortality",
+       y = "Biomass density")
+```
+
 ### How to update
 
-There seem to be several ways to update/improve/localize this model, and I'm not sure which is most appropriate.
+I can envision several ways to update/improve/localize this model, and I'm not sure which is most appropriate.
 
--   In instances where we have abundant data it might be appropriate to just estimate our own equation to replace the equation they use. Without knowing much about our data availability it seem likely this approach could work for asymptotic length and (possibly) weight.
+-   In instances where we have abundant data it might be appropriate to estimate our own equation to replace the equation Lester uses. Without knowing much about our data availability it seem likely this approach could work for asymptotic length and (possibly) weight.
 
 -   If we could obtain variance estimates form the authors we may be able to use Bayesian methods to update their parameter estimates using our data.
 
@@ -155,14 +171,12 @@ There seem to be several ways to update/improve/localize this model, and I'm not
 
 ### How to ground truth
 
-The other issue I think we need to consider is how to verify the model is making accurate estimates for our lakes. I can see two paths here:
-
--   You could think of the approach outlined above as using the data we have available to "train" the model to fit our lakes. An approach which is conceptually separate from that outline above would be to hold our data out of the model and use it as a "testing" set to verify the reliability of the model for our situation. James and Mackenzie will likely have to use their discretion to decide which approach is most appropriate given the data available.
-
--   An important set which I view somewhat separately form most of what was said above would be to use SWHS records for these stocks (or any direct estimate of biomass we might have) to ground truth the estimate of MSY for the lake where we have harvest information..
+The other issue I think we need to consider is how to verify the model is making accurate management recommendations for our lakes. You could think of the approach outlined above as using the data we have available to "train" the model to fit our lakes. An approach which is conceptually separate from that outline above would be to hold our data out of the model and use it to "test" the model for our situation. While this could be appropriate for any parameter it is likely our only option to gain confidence in the model wrt yield (i.e. use SWHS records for these stocks, or any direct estimate of biomass when avaiable, to ground truth the estimate of MSY for the lake where we have harvest information).
 
 ### How to not abuse the Lester model
 
-I think it's important to note that Lester et al. intended this model be be a regional scale diagnostic because they felt the MSY estimates were to variable to be of much use. The model is mostly heuristic in that not estimates of variability are produced and we really cant say much about the quality of it's estimates. I hear staff talking about wanting to use these estimates of MSY to modify regulations on individual lakes. I'd urge cation here and think hard about how to make decisions for groups of similar lakes. The Lester paper gives some instruction on how they thought this should be done.
+I think it's important to note that Lester et al. intended this model be be a regional scale diagnostic because they felt the MSY estimates were to variable to be of much use. The model is mostly heuristic in that no estimates of variability are produced and we really cant say much about the quality of it's estimates. I hear staff talking about wanting to use these estimates of MSY to modify regulations on individual lakes. I'd urge cation here and think hard about how to make decisions for groups of similar lakes. The Lester paper gives some instruction on how they thought this should be done.
 
-I also think we need to have some careful though on the fraction of MSY we want to harvest and if we want that fraction to change depending on our ability to identify problems and manage fisheries for groups of similar lakes.
+When I look at Jordy's comparison between the lake area and Lester models I see Crosswind and Louise as the largest difference on the kilogram scale but see shallow Tangle and Little Sevenmile as the large proportional changes from the LAM estimates. Do we have the management resolution to respond to the changes we are seeing for the smaller MSY lakes? Is there a pattern in the model differences wrt population viability, accessibility or fishing pressure that we can manage to.
+
+The other thing I noticed is that Jordy was considering different scaling factors for harvest targets as a percent of MSY. If we are assuming the yield potential from the LAM is half of MSY and also trying to make sure our harvest stays below LAM yield potential then is seems like scaling factors above 0.5 represent liberalizations that we are making by choice, rather than as a result of this new assessment.
