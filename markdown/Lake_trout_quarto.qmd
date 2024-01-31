@@ -170,17 +170,17 @@ There are two ways to use Lester's model: (1) we have enough of our own data to 
     2.  We calculate sustained yield for each of our lakes, following Lester's suggestions.
     3.  We use our version of the Lester model to calculate MSY, and then compare it to sustained yield for our lakes.
         1.  Do our calculations for biomass and MSY make sense? Are there factors influencing lake trout survival that aren't in the model? How can we be sure that the resulting MSY is actually maximum sustained yield for our fish?
-        2.  Regardless, use the MSY for individual lakes with extreme caution. If we want to know how a lake trout population is doing, then we need data on that population.
-        3.  Since data on multiple lakes were used in the model, our population of inference is all the Alaskan lakes in our dataset. Thus, the MSY calculated from our own model using Alaskan data is a description of all our Alaskan lakes and not just one.
+        2.  Regardless, use the MSY for individual lakes with extreme caution. If we want to know how a lake trout population is doing, then we need abundance and harvest data on that population.
+        3.  Since data on multiple lakes were used in the model, our population of inference is all the Alaskan lakes in our dataset. Thus, the MSY calculated from our own model using Alaskan data is a description of all our Alaskan lakes and not just one. Lake information plugged into the model gives average MSY for Alaskan lakes with the same information as was plugged in. Notice that the MSY applies to lakes of a certain size, depth, etc. in general and may not be true for a specific lake of the same size, depth, etc.
 2.  We don't have much data on Alaskan lakes, and may never have enough. We use the process Lester et al. took to create their model.
-    1.  We determine sustainable exploitation rates for the lakes where the abundance hasn't changed and we have sufficient abundance estimates and SWHS estimates.
+    1.  We determine average annual sustainable exploitation rates for the lakes where the abundance hasn't changed and we have sufficient abundance estimates and SWHS estimates.
     2.  We explore relationships between these exploitation rates and the other data we have on length, weight, lake depth, etc.
-    3.  We ask ourselves: Are these relationships strong enough to tell us anything about the sustainable exploitation rates for lakes we have less data for?
-        1.  If so, create equations based on the relationships we see to create our own model. Update parameter values in the equations based on our Alaskan data. Then use our model to calculate sustainable exploitation rates for our lakes we have less data for.
-            1.  Do those sustainable exploitation rates make sense based on what we do know about the lakes?
-            2.  Regardless, use the sustainable exploitation rates for an individual lake calculated in this way with extreme caution. If we want to know how a lake trout population is doing, then we need data on that population.
-            3.  Since data on multiple lakes were used in the model, our population of inference is all the Alaskan lakes in our dataset. Thus, the sustainable exploitation rates calculated from our own model using Alaskan data is a description of all our Alaskan lakes and not just one.
-        2.  If not, we need to collect more data within our budget to update the model, or be content calculating sustainable exploitation rates for lakes using abundance and SWHS estimates for those specific lakes.
+    3.  We ask ourselves: Are these relationships strong enough to tell us anything about our lakes and lake trout populations?
+        1.  If so, create equations based on the relationships we see to create our own model. Update parameter values in the equations based on our Alaskan data. Then use our model to calculate sustainable exploitation rates for our lakes.
+            1.  Do those sustainable exploitation rates make sense based on what we do know about those lakes?
+            2.  Regardless, use the sustainable exploitation rates for an individual lake calculated in this way with extreme caution. If we want to know how a lake trout population is doing, then we need abundance and harvest data on that population.
+            3.  Since data on multiple lakes were used in the model, our population of inference is all the Alaskan lakes in our dataset. Thus, the sustainable exploitation rates calculated from our own model using Alaskan data is a description of all our Alaskan lakes and not just one. Lake information plugged into the model gives average sustainable exploitation rates for Alaskan lakes with the same information as was plugged in. Notice that the sustainable exploitation rate applies to lakes of a certain size, depth, etc. in general and may not be true for a specific lake of the same size, depth, etc.
+        2.  If not, we need to collect more data within our budget to update the model, or be content calculating sustainable exploitation rates for an individual lake using abundance and SWHS estimates for said lake and then using those exploitation rates as a management tool for that specific lake.
 
 ### How to ground truth
 
